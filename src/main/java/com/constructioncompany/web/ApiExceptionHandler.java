@@ -33,6 +33,11 @@ public class ApiExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", "The record already exists."));
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    ResponseEntity<Map<String, String>> illegalArgument(IllegalArgumentException exception) {
+        return ResponseEntity.badRequest().body(Map.of("error", exception.getMessage()));
+    }
+
     @ExceptionHandler({DataAccessException.class, SQLIntegrityConstraintViolationException.class})
     ResponseEntity<Map<String, String>> databaseError(Exception exception) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
