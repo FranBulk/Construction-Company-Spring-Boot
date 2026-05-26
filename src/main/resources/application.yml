@@ -1,0 +1,35 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: construction-company-api
+  datasource:
+    url: ${ORACLE_URL:jdbc:oracle:thin:@localhost:1521/XEPDB1}
+    username: ${ORACLE_USER:ConstructionCompany}
+    password: ${ORACLE_PASSWORD:const123}
+    driver-class-name: oracle.jdbc.OracleDriver
+    hikari:
+      maximum-pool-size: 8
+      minimum-idle: 1
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+camel:
+  springboot:
+    name: construction-company-camel
+
+app:
+  messaging:
+    exchange: construction.events
+    payment-request-queue: construction.payments.requested
+    payment-request-routing-key: payments.requested
+    payment-result-queue: construction.payments.completed
+    payment-result-routing-key: payments.completed
+
+logging:
+  level:
+    com.constructioncompany: INFO

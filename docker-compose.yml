@@ -1,0 +1,32 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: construction-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: construction-company-api
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      ORACLE_URL: jdbc:oracle:thin:@host.docker.internal:1521/XEPDB1
+      ORACLE_USER: ConstructionCompany
+      ORACLE_PASSWORD: const123
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: guest
+      RABBITMQ_PASSWORD: guest
