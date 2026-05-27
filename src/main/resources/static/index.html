@@ -421,6 +421,19 @@
         reference: "ListConstructionSiteReferences",
         queries: [
           {
+            title: "Register Construction Site",
+            description: "Create a new construction site record.",
+            functionName: "RegisterConstructionSite",
+            fields: [
+              { key: "construction_site_id", label: "Construction site ID" },
+              { key: "customer_id", label: "Customer ID", optional: true },
+              { key: "country", label: "Country", optional: true },
+              { key: "city", label: "City", optional: true },
+              { key: "street", label: "Street", optional: true },
+              { key: "address", label: "Address", optional: true }
+            ]
+          },
+          {
             title: "Construction Info",
             description: "Find address and customer information by construction site ID.",
             functionName: "ConstructionInfo",
@@ -460,6 +473,24 @@
       "Employees": {
         reference: "ListEmployeeReferences",
         queries: [
+          {
+            title: "Register Employee",
+            description: "Create a new employee record and optionally assign boss, construction site, payroll and bank data.",
+            functionName: "RegisterEmployee",
+            fields: [
+              { key: "employee_id", label: "Employee ID" },
+              { key: "boss_id", label: "Boss ID", optional: true },
+              { key: "construction_site_id", label: "Construction site ID", optional: true },
+              { key: "first_name", label: "First name" },
+              { key: "last_name", label: "Last name" },
+              { key: "start_date", label: "Start date", kind: "date", optional: true },
+              { key: "hire_date", label: "Hire date", kind: "date", optional: true },
+              { key: "current_pay", label: "Current pay", kind: "number", optional: true },
+              { key: "bank_account", label: "Bank account", optional: true },
+              { key: "bank_name", label: "Bank name", optional: true },
+              { key: "phone", label: "Phone", optional: true }
+            ]
+          },
           {
             title: "Employees Under Managers",
             description: "List employees together with their manager.",
@@ -693,7 +724,10 @@
         label.textContent = field.label;
         const input = document.createElement("input");
         input.name = field.key;
-        input.type = field.kind === "int" ? "number" : "text";
+        input.type = field.kind === "int" || field.kind === "number" ? "number" : field.kind === "date" ? "date" : "text";
+        if (field.kind === "number") {
+          input.step = "0.01";
+        }
         label.appendChild(input);
         fields.appendChild(label);
       });
@@ -733,7 +767,7 @@
       for (const field of query.fields) {
         const input = fields.querySelector(`[name="${field.key}"]`);
         const value = input.value.trim();
-        if (!value) {
+        if (!value && !field.optional) {
           throw new Error(`${field.label} is required.`);
         }
         args[field.key] = value;

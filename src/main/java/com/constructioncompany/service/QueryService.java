@@ -4,6 +4,8 @@ import com.constructioncompany.api.PaymentRequest;
 import com.constructioncompany.api.PaymentResult;
 import com.constructioncompany.repository.PaymentRepository;
 import java.math.BigDecimal;
+import java.sql.Date;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -117,11 +119,13 @@ public class QueryService {
                     order by sic.ConstructionSite_ID, sic.Company_ID
                     """)
             )),
+            Map.entry("RegisterConstructionSite", this::registerConstructionSite),
             Map.entry("ConstructionInfo", this::constructionInfo),
             Map.entry("SearchConstructionSiteByName", this::searchConstructionSiteByName),
             Map.entry("SearchConstructionSiteByID", this::searchConstructionSiteById),
             Map.entry("AllOfTheEmployeesInTheConstruction", this::employeesInConstruction),
             Map.entry("CustomerInfo", this::customerInfo),
+            Map.entry("RegisterEmployee", this::registerEmployee),
             Map.entry("ConsultEmployeesUnderManagers", args -> rows("""
                 select e.FirstName || ' ' || e.LastName || ' Boss: ' || b.FirstName || ' ' || b.LastName
                 from Employees e
@@ -166,6 +170,21 @@ public class QueryService {
             throw new IllegalArgumentException("Unknown query: " + name);
         }
         return query.apply(args == null ? Map.of() : args);
+    }
+
+    private String registerConstructionSite(Map<String, String> args) {
+        jdbcTemplate.update("""
+            insert into ConstructionSite (ConstructionSite_ID, Customer_ID, Country, City, Street, Address)
+            values (?, ?, ?, ?, ?, ?)
+            """,
+            required(args, "construction_site_id"),
+            optional(args, "customer_id"),
+            optional(args, "country"),
+            optional(args, "city"),
+            optional(args, "street"),
+            optional(args, "address")
+        );
+        return "Construction site registered successfully.";
     }
 
     private String constructionInfo(Map<String, String> args) {
@@ -223,6 +242,29 @@ public class QueryService {
             from Customers
             where Customer_ID = ?
             """, required(args, "customer_id"));
+    }
+
+    private String registerEmployee(Map<String, String> args) {
+        jdbcTemplate.update("""
+            insert into Employees (
+                Employee_ID, Boss_ID, ConstructionSite_ID, FirstName, LastName,
+                StartDate, HireDate, CurrentPay, BankAccount, BankName, Phone
+            )
+            values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            required(args, "employee_id"),
+            optional(args, "boss_id"),
+            optional(args, "construction_site_id"),
+            required(args, "first_name"),
+            required(args, "last_name"),
+            dateOrNull(args, "start_date"),
+            dateOrNull(args, "hire_date"),
+            decimalOrNull(args, "current_pay"),
+            optional(args, "bank_account"),
+            optional(args, "bank_name"),
+            optional(args, "phone")
+        );
+        return "Employee registered successfully.";
     }
 
     private String employeeInfo(Map<String, String> args) {
@@ -439,8 +481,23 @@ public class QueryService {
         return value.trim();
     }
 
+    private String optional(Map<String, String> args, String name) {
+        String value = args.get(name);
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
     private int requiredInt(Map<String, String> args, String name) {
         return Integer.parseInt(required(args, name));
+    }
+
+    private Date dateOrNull(Map<String, String> args, String name) {
+        String value = optional(args, name);
+        return value == null ? null : Date.valueOf(LocalDate.parse(value));
+    }
+
+    private BigDecimal decimalOrNull(Map<String, String> args, String name) {
+        String value = optional(args, name);
+        return value == null ? null : new BigDecimal(value);
     }
 
     private static ReferenceSection section(String title, String sql) {
