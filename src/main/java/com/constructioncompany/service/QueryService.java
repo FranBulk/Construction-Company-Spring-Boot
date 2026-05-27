@@ -6,6 +6,7 @@ import com.constructioncompany.repository.PaymentRepository;
 import java.math.BigDecimal;
 import java.sql.Date;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -120,12 +121,16 @@ public class QueryService {
                     """)
             )),
             Map.entry("RegisterConstructionSite", this::registerConstructionSite),
+            Map.entry("UpdateConstructionSite", this::updateConstructionSite),
+            Map.entry("DeleteConstructionSite", this::deleteConstructionSite),
             Map.entry("ConstructionInfo", this::constructionInfo),
             Map.entry("SearchConstructionSiteByName", this::searchConstructionSiteByName),
             Map.entry("SearchConstructionSiteByID", this::searchConstructionSiteById),
             Map.entry("AllOfTheEmployeesInTheConstruction", this::employeesInConstruction),
             Map.entry("CustomerInfo", this::customerInfo),
             Map.entry("RegisterEmployee", this::registerEmployee),
+            Map.entry("UpdateEmployee", this::updateEmployee),
+            Map.entry("DeleteEmployee", this::deleteEmployee),
             Map.entry("ConsultEmployeesUnderManagers", args -> rows("""
                 select e.FirstName || ' ' || e.LastName || ' Boss: ' || b.FirstName || ' ' || b.LastName
                 from Employees e
@@ -185,6 +190,28 @@ public class QueryService {
             optional(args, "address")
         );
         return "Construction site registered successfully.";
+    }
+
+    private String updateConstructionSite(Map<String, String> args) {
+        List<String> assignments = new ArrayList<>();
+        List<Object> values = new ArrayList<>();
+        addUpdate(assignments, values, "Customer_ID", optional(args, "customer_id"));
+        addUpdate(assignments, values, "Country", optional(args, "country"));
+        addUpdate(assignments, values, "City", optional(args, "city"));
+        addUpdate(assignments, values, "Street", optional(args, "street"));
+        addUpdate(assignments, values, "Address", optional(args, "address"));
+        int updated = updateById("ConstructionSite", "ConstructionSite_ID", required(args, "construction_site_id"), assignments, values);
+        return affected(updated, "Construction site updated successfully.");
+    }
+
+    private String deleteConstructionSite(Map<String, String> args) {
+        int deleted = jdbcTemplate.update("""
+            delete from ConstructionSite
+            where ConstructionSite_ID = ?
+            """,
+            required(args, "construction_site_id")
+        );
+        return affected(deleted, "Construction site deleted successfully.");
     }
 
     private String constructionInfo(Map<String, String> args) {
@@ -265,6 +292,33 @@ public class QueryService {
             optional(args, "phone")
         );
         return "Employee registered successfully.";
+    }
+
+    private String updateEmployee(Map<String, String> args) {
+        List<String> assignments = new ArrayList<>();
+        List<Object> values = new ArrayList<>();
+        addUpdate(assignments, values, "Boss_ID", optional(args, "boss_id"));
+        addUpdate(assignments, values, "ConstructionSite_ID", optional(args, "construction_site_id"));
+        addUpdate(assignments, values, "FirstName", optional(args, "first_name"));
+        addUpdate(assignments, values, "LastName", optional(args, "last_name"));
+        addUpdate(assignments, values, "StartDate", dateOrNull(args, "start_date"));
+        addUpdate(assignments, values, "HireDate", dateOrNull(args, "hire_date"));
+        addUpdate(assignments, values, "CurrentPay", decimalOrNull(args, "current_pay"));
+        addUpdate(assignments, values, "BankAccount", optional(args, "bank_account"));
+        addUpdate(assignments, values, "BankName", optional(args, "bank_name"));
+        addUpdate(assignments, values, "Phone", optional(args, "phone"));
+        int updated = updateById("Employees", "Employee_ID", required(args, "employee_id"), assignments, values);
+        return affected(updated, "Employee updated successfully.");
+    }
+
+    private String deleteEmployee(Map<String, String> args) {
+        int deleted = jdbcTemplate.update("""
+            delete from Employees
+            where Employee_ID = ?
+            """,
+            required(args, "employee_id")
+        );
+        return affected(deleted, "Employee deleted successfully.");
     }
 
     private String employeeInfo(Map<String, String> args) {
@@ -498,6 +552,32 @@ public class QueryService {
     private BigDecimal decimalOrNull(Map<String, String> args, String name) {
         String value = optional(args, name);
         return value == null ? null : new BigDecimal(value);
+    }
+
+    private String affected(int count, String successMessage) {
+        return count == 0 ? NOT_FOUND : successMessage;
+    }
+
+    private void addUpdate(List<String> assignments, List<Object> values, String column, Object value) {
+        if (value != null) {
+            assignments.add(column + " = ?");
+            values.add(value);
+        }
+    }
+
+    private int updateById(
+        String table,
+        String idColumn,
+        String idValue,
+        List<String> assignments,
+        List<Object> values
+    ) {
+        if (assignments.isEmpty()) {
+            throw new IllegalArgumentException("At least one field must be provided.");
+        }
+        values.add(idValue);
+        String sql = "update " + table + " set " + String.join(", ", assignments) + " where " + idColumn + " = ?";
+        return jdbcTemplate.update(sql, values.toArray());
     }
 
     private static ReferenceSection section(String title, String sql) {

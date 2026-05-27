@@ -434,6 +434,25 @@
             ]
           },
           {
+            title: "Update Construction Site",
+            description: "Change customer or address data for an existing construction site.",
+            functionName: "UpdateConstructionSite",
+            fields: [
+              { key: "construction_site_id", label: "Construction site ID" },
+              { key: "customer_id", label: "Customer ID", optional: true },
+              { key: "country", label: "Country", optional: true },
+              { key: "city", label: "City", optional: true },
+              { key: "street", label: "Street", optional: true },
+              { key: "address", label: "Address", optional: true }
+            ]
+          },
+          {
+            title: "Delete Construction Site",
+            description: "Delete a construction site by ID when it has no dependent records.",
+            functionName: "DeleteConstructionSite",
+            fields: [{ key: "construction_site_id", label: "Construction site ID" }]
+          },
+          {
             title: "Construction Info",
             description: "Find address and customer information by construction site ID.",
             functionName: "ConstructionInfo",
@@ -490,6 +509,30 @@
               { key: "bank_name", label: "Bank name", optional: true },
               { key: "phone", label: "Phone", optional: true }
             ]
+          },
+          {
+            title: "Update Employee",
+            description: "Change employee assignment, payroll, bank or contact data.",
+            functionName: "UpdateEmployee",
+            fields: [
+              { key: "employee_id", label: "Employee ID" },
+              { key: "boss_id", label: "Boss ID", optional: true },
+              { key: "construction_site_id", label: "Construction site ID", optional: true },
+              { key: "first_name", label: "First name", optional: true },
+              { key: "last_name", label: "Last name", optional: true },
+              { key: "start_date", label: "Start date", kind: "date", optional: true },
+              { key: "hire_date", label: "Hire date", kind: "date", optional: true },
+              { key: "current_pay", label: "Current pay", kind: "number", optional: true },
+              { key: "bank_account", label: "Bank account", optional: true },
+              { key: "bank_name", label: "Bank name", optional: true },
+              { key: "phone", label: "Phone", optional: true }
+            ]
+          },
+          {
+            title: "Delete Employee",
+            description: "Delete an employee by ID when it has no dependent records.",
+            functionName: "DeleteEmployee",
+            fields: [{ key: "employee_id", label: "Employee ID" }]
           },
           {
             title: "Employees Under Managers",
@@ -807,6 +850,9 @@
         results.textContent = "Loading...";
         setStatus(`Running ${query.title}...`);
         results.textContent = await runQuery(query.functionName, args);
+        if (/^(Register|Update|Delete)/.test(query.functionName)) {
+          referenceCache = {};
+        }
         setStatus("Done");
       } catch (error) {
         results.textContent = error.message;
